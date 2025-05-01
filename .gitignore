@@ -1,0 +1,12 @@
+
+
+# Environment files
+.env
+
+# Go modules cache
+go.sum
+
+# Go build directories
+/build/
+bin/
+vendor/
