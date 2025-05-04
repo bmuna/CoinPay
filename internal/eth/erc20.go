@@ -1,4 +1,4 @@
-package crypto_eth
+package eth
 
 import (
 	"context"

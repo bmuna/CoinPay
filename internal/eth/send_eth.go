@@ -1,4 +1,4 @@
-package crypto_eth
+package eth
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 )
 
 func SendETH(client *ethclient.Client, privateKey *ecdsa.PrivateKey, fromAddress, toAddress common.Address, amount string) {
+	
 	// Convert amount from string to *big.Int (in wei)
 	weiAmount := new(big.Int)
 	weiAmount, ok := weiAmount.SetString(amount, 10)
