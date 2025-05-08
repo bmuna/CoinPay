@@ -34,11 +34,15 @@ func Signup(apiCfg *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var userCredential UserCredential
 
-		fmt.Printf("--resonse Body: %v", json.NewDecoder(r.Body).Decode(&userCredential))
-
 		err := json.NewDecoder(r.Body).Decode(&userCredential)
 		if err != nil {
 			respondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+			return
+		}
+
+		_, err = apiCfg.DB.GetUser(r.Context(), userCredential.Email)
+		if err == nil {
+			respondWithError(w, http.StatusConflict, "User already exists with this email")
 			return
 		}
 
