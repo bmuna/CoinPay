@@ -9,18 +9,17 @@ import (
 	"github.com/markbates/goth/providers/google"
 )
 
-
 const (
-	key = "randomString"
+	key    = "randomString"
 	MaxAge = 84600 * 30
 	isProd = false
 )
 
 func NewAuth() {
-	err := godotenv.Load() 
+	err := godotenv.Load()
 
-	if err != nil{
-		log.Fatal("Error landing .env file");
+	if err != nil {
+		log.Fatal("Error landing .env file")
 	}
 
 	googleClientId := os.Getenv("GOOGLE_CLIENT_ID")
@@ -29,6 +28,4 @@ func NewAuth() {
 	goth.UseProviders(
 		google.New(googleClientId, googleClientSecret, "http://localhost:3000/auth/go"),
 	)
-
-
 }
