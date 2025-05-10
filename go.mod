@@ -6,11 +6,13 @@ require (
 	github.com/ethereum/go-ethereum v1.15.10
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/cors v1.2.1
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/markbates/goth v1.81.0
 	golang.org/x/crypto v0.38.0
+	golang.org/x/oauth2 v0.17.0
 )
 
 require (
@@ -41,7 +43,6 @@ require (
 	github.com/supranational/blst v0.3.14 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
-	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

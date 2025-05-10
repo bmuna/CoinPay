@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	internal "github.com/bmuna/CoinPay/backend/internal/auth"
 	"github.com/bmuna/CoinPay/backend/internal/config"
 	"github.com/bmuna/CoinPay/backend/internal/controller"
 	"github.com/bmuna/CoinPay/backend/internal/database"
@@ -13,11 +14,12 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 
-	_ "github.com/lib/pq" // Import the pq driver
+	_ "github.com/lib/pq"
 )
 
-
 func NewServer() http.Handler {
+	internal.NewAuth()
+
 	dbURL := os.Getenv("DB_URL")
 
 	if dbURL == "" {
@@ -46,8 +48,9 @@ func NewServer() http.Handler {
 	}))
 
 	router.Get("/healthz", controller.HandlerReadiness)
-	router.Get("/auth/{provider}/callback", controller.GetAuthCallBackFuction)
-	router.Get("/api/login", controller.Login)
+	router.Get("/auth/{provider}", controller.BiginAuthProviderCallback)
+	router.Get("/auth/{provider}/callback", controller.GetAuthCallBackFuction(&apiCfg))
+	router.Post("/api/signin", controller.Signin(&apiCfg))
 	router.Post("/api/signup", controller.Signup(&apiCfg))
 
 	return router
