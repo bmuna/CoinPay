@@ -118,7 +118,6 @@ func GetAuthCallBackFuction(apiCfg *config.ApiConfig) http.HandlerFunc {
 			return
 		}
 
-		// fmt.Println(user)
 		email := user.Email
 
 		_, err = apiCfg.DB.GetUser(r.Context(), email)
