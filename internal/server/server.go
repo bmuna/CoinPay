@@ -52,6 +52,7 @@ func NewServer() http.Handler {
 	router.Get("/auth/{provider}/callback", controller.GetAuthCallBackFuction(&apiCfg))
 	router.Post("/api/signin", controller.Signin(&apiCfg))
 	router.Post("/api/signup", controller.Signup(&apiCfg))
+	router.Post("/api/sendeth", controller.SendEth)
 
 	return router
 

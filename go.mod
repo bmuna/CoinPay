@@ -12,7 +12,6 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/markbates/goth v1.81.0
 	golang.org/x/crypto v0.38.0
-	golang.org/x/oauth2 v0.17.0
 )
 
 require (
@@ -43,6 +42,7 @@ require (
 	github.com/supranational/blst v0.3.14 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
+	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

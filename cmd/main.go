@@ -52,7 +52,7 @@ func main() {
 	// eth.SendETH(client, privateKey, fromAddress, toAddress, amount)
 
 	// // Optionally, get balances (ETH or ERC-20 token balance) after sending
-	// balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
+		// balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
 	// if err != nil {
 	// 	log.Fatalf("Failed to retrieve the balance: %v", err)
 	// }

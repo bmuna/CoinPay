@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/bmuna/CoinPay/backend/internal/config"
 	"github.com/bmuna/CoinPay/backend/internal/database"
 	"github.com/bmuna/CoinPay/backend/internal/models"
+	"github.com/bmuna/CoinPay/backend/internal/security"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"github.com/markbates/goth/gothic"
@@ -130,10 +132,12 @@ func GetAuthCallBackFuction(apiCfg *config.ApiConfig) http.HandlerFunc {
 				return
 			}
 
+			userId := uuid.New()
+
 			_, err = apiCfg.DB.CreateUser(
 				r.Context(),
 				database.CreateUserParams{
-					ID:        uuid.New(),
+					ID:        userId,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 					Email:     email,
@@ -146,10 +150,28 @@ func GetAuthCallBackFuction(apiCfg *config.ApiConfig) http.HandlerFunc {
 				return
 			}
 
+			privateKeyHex, address := CreateWallet()
+
+			encryptedKey, err := security.Encrypt(privateKeyHex, os.Getenv("ENCRYPTION_SECRET"))
+			if err != nil {
+				log.Printf("Error when encrypting private key %v", err)
+			}
+
+			_, err = apiCfg.DB.CreateWallet(r.Context(), database.CreateWalletParams{
+				ID:                  uuid.New(),
+				UserID:              userId,
+				Address:             address,
+				EncryptedPrivateKey: encryptedKey,
+			})
+
+			if err != nil {
+				log.Printf("Error when creating a wallet %v", err)
+			}
+
 		}
 
 		tokenString, _ := createToken(email)
-		// respondWithJSON(w, 200, models.DatabaseUserToUser(dbUser, &tokenString))
+		//  (w, 200, models.DatabaseUserToUser(dbUser, &tokenString))
 
 		redirectURL := fmt.Sprintf("myapp://auth_callback?email=%s&token=%s", email, tokenString)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
