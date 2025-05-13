@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var secretKey = []byte(os.Getenv("DB_URL"))
+var secretKey = []byte(os.Getenv("JWT_SECRET"))
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
 	if code >= 400 {
@@ -55,18 +54,26 @@ func createToken(email string) (string, error) {
 	return tokenString, nil
 }
 
-func verifyToken(tokenString string) error {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
+func JWTMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenString := r.Header.Get("Authorization")
+		if tokenString == "" {
+			log.Println("Unauthorized user: missing token")
+			respondWithError(w, http.StatusUnauthorized, "Unauthorized user")
+			return
+		}
+		
+		
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("JWT_SECRET")), nil
+		})
+
+		if err != nil || !token.Valid {
+			log.Println("Invalid or expired token:", err)
+			respondWithError(w, http.StatusUnauthorized, "Invalid or expired token")
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
-
-	if err != nil {
-		return err
-	}
-
-	if !token.Valid {
-		return fmt.Errorf("invalid token")
-	}
-
-	return nil
 }

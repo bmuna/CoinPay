@@ -7,7 +7,8 @@ package database
 
 import (
 	"context"
-	"database/sql"
+	"time"
+
 
 	"github.com/google/uuid"
 )
@@ -24,7 +25,7 @@ type CreateWalletParams struct {
 	UserID              uuid.UUID
 	Address             string
 	EncryptedPrivateKey string
-	CreatedAt           sql.NullTime
+	CreatedAt           time.Time
 }
 
 func (q *Queries) CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error) {

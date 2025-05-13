@@ -37,9 +37,6 @@ func CreateWallet() (string, string) {
 	privateKeyBytes := crypto.FromECDSA(generatedPrivateKey)
 	privateKeyHex := hex.EncodeToString(privateKeyBytes)
 
-
-	
-
 	return privateKeyHex, ethAddress
 }
 

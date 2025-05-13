@@ -52,7 +52,13 @@ func NewServer() http.Handler {
 	router.Get("/auth/{provider}/callback", controller.GetAuthCallBackFuction(&apiCfg))
 	router.Post("/api/signin", controller.Signin(&apiCfg))
 	router.Post("/api/signup", controller.Signup(&apiCfg))
-	router.Post("/api/sendeth", controller.SendEth)
+
+	// Protected routes
+	router.Group(func(r chi.Router) {
+		r.Use(controller.JWTMiddleware)
+		r.Post("/api/sendeth", controller.SendEth)
+		// r.Post("/api/sendeth", controller.Ge)
+	})
 
 	return router
 

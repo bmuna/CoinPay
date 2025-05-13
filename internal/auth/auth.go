@@ -21,4 +21,6 @@ func NewAuth() {
 	goth.UseProviders(
 		google.New(googleClientId, googleClientSecret, "http://localhost:8081/auth/google/callback"),
 	)
+
+	
 }

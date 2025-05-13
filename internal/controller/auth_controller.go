@@ -162,6 +162,7 @@ func GetAuthCallBackFuction(apiCfg *config.ApiConfig) http.HandlerFunc {
 				UserID:              userId,
 				Address:             address,
 				EncryptedPrivateKey: encryptedKey,
+				CreatedAt:           time.Now(),
 			})
 
 			if err != nil {
@@ -178,6 +179,8 @@ func GetAuthCallBackFuction(apiCfg *config.ApiConfig) http.HandlerFunc {
 
 	}
 }
+
+
 
 func handlerSendETH() {
 
