@@ -6,7 +6,7 @@ type SendEthRequest struct {
 }
 
 type GetEthRequest struct {
-	EthAddress string `json:"eth_Address"`
+	UserId string `json:"user_id"`
 }
 
 type EthBalanceResponse struct {

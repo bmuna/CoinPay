@@ -15,7 +15,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/google/uuid"
 
+	"github.com/bmuna/CoinPay/backend/internal/config"
 	"github.com/bmuna/CoinPay/backend/internal/models"
 )
 
@@ -120,67 +122,81 @@ func SendEth(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Transaction sent! TX Hash: %s", signedTx.Hash().Hex())
 }
 
-func GetEth(w http.ResponseWriter, r *http.Request) {
-	infuraURL := os.Getenv("INFURA_URL")
+func GetEth(apiCfg *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		infuraURL := os.Getenv("INFURA_URL")
 
-	var req models.GetEthRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
-		return
+		var req models.GetEthRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+			return
+		}
+
+		userUUID, err := uuid.Parse(req.UserId)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid user_id format")
+			return
+		}
+
+		wallet, err := apiCfg.DB.GetWallet(r.Context(), userUUID)
+
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Error fetching wallet")
+			return
+		}
+
+		if !common.IsHexAddress(wallet.Address) {
+			respondWithError(w, http.StatusBadRequest, "Invalid Ethereum address")
+			return
+		}
+
+		// Connect to Ethereum node
+		client, err := ethclient.Dial(infuraURL)
+		if err != nil {
+			log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		}
+
+		ctx := context.Background()
+
+		fmt.Printf("---EthAddress--- %v", wallet.Address)
+
+		address := common.HexToAddress(wallet.Address)
+		balance, err := client.BalanceAt(ctx, address, nil)
+		if err != nil {
+			log.Printf("Failed to get balance: %v", err)
+			respondWithError(w, http.StatusInternalServerError, "Failed to fetch balance")
+
+			return
+		}
+
+		balanceInEth := new(big.Float).Quo(new(big.Float).SetInt(balance), big.NewFloat(1e18))
+		resp, err := http.Get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
+
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Failed to fetch ETH price")
+
+			return
+		}
+
+		defer resp.Body.Close()
+
+		var priceData map[string]map[string]float64
+
+		if err := json.NewDecoder(resp.Body).Decode(&priceData); err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Failed to parse price data")
+			return
+		}
+
+		priceUSD := priceData["ethereum"]["usd"]
+
+		balanceInUsd := new(big.Float).Mul(balanceInEth, big.NewFloat(priceUSD))
+
+		response := models.EthBalanceResponse{
+			BalanceETH: balanceInEth.Text('f', 6),
+			BalanceUSD: balanceInUsd.Text('f', 2),
+		}
+
+		respondWithJSON(w, http.StatusOK, response)
 	}
-
-	if !common.IsHexAddress(req.EthAddress) {
-		respondWithError(w, http.StatusBadRequest, "Invalid Ethereum address")
-		return
-	}
-
-	// Connect to Ethereum node
-	client, err := ethclient.Dial(infuraURL)
-	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-	}
-
-	ctx := context.Background()
-
-	fmt.Printf("---EthAddress--- %v", req.EthAddress)
-
-	address := common.HexToAddress(req.EthAddress)
-	balance, err := client.BalanceAt(ctx, address, nil)
-	if err != nil {
-		log.Printf("Failed to get balance: %v", err)
-		respondWithError(w, http.StatusInternalServerError, "Failed to fetch balance")
-
-		return
-	}
-
-	balanceInEth := new(big.Float).Quo(new(big.Float).SetInt(balance), big.NewFloat(1e18))
-	resp, err := http.Get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
-
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to fetch ETH price")
-
-		return
-	}
-
-	defer resp.Body.Close()
-
-	var priceData map[string]map[string]float64
-
-	if err := json.NewDecoder(resp.Body).Decode(&priceData); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to parse price data")
-		return
-	}
-
-	priceUSD := priceData["ethereum"]["usd"]
-
-	balanceInUsd := new(big.Float).Mul(balanceInEth, big.NewFloat(priceUSD))
-
-	response := models.EthBalanceResponse{
-		BalanceETH: balanceInEth.Text('f', 6),
-		BalanceUSD: balanceInUsd.Text('f', 2),
-	}
-
-	respondWithJSON(w, http.StatusOK, response)
-
 }
