@@ -57,7 +57,7 @@ func NewServer() http.Handler {
 	router.Group(func(r chi.Router) {
 		r.Use(controller.JWTMiddleware)
 		r.Post("/api/sendeth", controller.SendEth)
-		// r.Post("/api/sendeth", controller.Ge)
+		r.Get("/api/geteth", controller.GetEth)
 	})
 
 	return router

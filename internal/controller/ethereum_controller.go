@@ -44,7 +44,6 @@ func SendEth(w http.ResponseWriter, r *http.Request) {
 	infuraURL := os.Getenv("INFURA_URL")
 	privateKeyHex := os.Getenv("PRIVATE_KEY")
 
-	// Parse JSON request body
 	var req models.SendEthRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -58,13 +57,11 @@ func SendEth(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
 	}
 
-	// Convert private key hex to ECDSA
 	privateKey, err := crypto.HexToECDSA(privateKeyHex)
 	if err != nil {
 		log.Fatalf("Failed to load private key: %v", err)
 	}
 
-	// Derive public key and sender address
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
@@ -72,14 +69,13 @@ func SendEth(w http.ResponseWriter, r *http.Request) {
 	}
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-	// Prepare recipient address and amount
 	toAddress := common.HexToAddress(req.ToAddress)
 	amountInWei := new(big.Int)
 	amountInWei.Mul(big.NewInt(int64(req.Amount*1e6)), big.NewInt(1e12))
 
 	ctx := context.Background()
 
-	// Check balance (optional)
+	// Check balance
 	balance, err := client.BalanceAt(ctx, fromAddress, nil)
 	if err != nil {
 		log.Fatalf("Failed to get balance: %v", err)
@@ -89,20 +85,18 @@ func SendEth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get nonce
 	nonce, err := client.PendingNonceAt(ctx, fromAddress)
 	if err != nil {
 		log.Fatalf("Failed to get nonce: %v", err)
 	}
 
-	// Get gas price
 	gasPrice, err := client.SuggestGasPrice(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get gas price: %v", err)
 	}
 
 	// Create transaction
-	gasLimit := uint64(21000) // Standard for ETH transfer
+	gasLimit := uint64(21000)
 	tx := types.NewTransaction(nonce, toAddress, amountInWei, gasLimit, gasPrice, nil)
 
 	// Sign transaction
@@ -124,4 +118,69 @@ func SendEth(w http.ResponseWriter, r *http.Request) {
 
 	// Return TX hash
 	fmt.Fprintf(w, "Transaction sent! TX Hash: %s", signedTx.Hash().Hex())
+}
+
+func GetEth(w http.ResponseWriter, r *http.Request) {
+	infuraURL := os.Getenv("INFURA_URL")
+
+	var req models.GetEthRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if !common.IsHexAddress(req.EthAddress) {
+		respondWithError(w, http.StatusBadRequest, "Invalid Ethereum address")
+		return
+	}
+
+	// Connect to Ethereum node
+	client, err := ethclient.Dial(infuraURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+	}
+
+	ctx := context.Background()
+
+	fmt.Printf("---EthAddress--- %v", req.EthAddress)
+
+	address := common.HexToAddress(req.EthAddress)
+	balance, err := client.BalanceAt(ctx, address, nil)
+	if err != nil {
+		log.Printf("Failed to get balance: %v", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to fetch balance")
+
+		return
+	}
+
+	balanceInEth := new(big.Float).Quo(new(big.Float).SetInt(balance), big.NewFloat(1e18))
+	resp, err := http.Get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to fetch ETH price")
+
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var priceData map[string]map[string]float64
+
+	if err := json.NewDecoder(resp.Body).Decode(&priceData); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to parse price data")
+		return
+	}
+
+	priceUSD := priceData["ethereum"]["usd"]
+
+	balanceInUsd := new(big.Float).Mul(balanceInEth, big.NewFloat(priceUSD))
+
+	response := models.EthBalanceResponse{
+		BalanceETH: balanceInEth.Text('f', 6),
+		BalanceUSD: balanceInUsd.Text('f', 2),
+	}
+
+	respondWithJSON(w, http.StatusOK, response)
+
 }

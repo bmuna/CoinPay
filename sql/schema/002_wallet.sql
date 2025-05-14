@@ -5,7 +5,7 @@ CREATE TABLE wallets (
   user_id UUID REFERENCES users(id),
   address TEXT NOT NULL,
   encrypted_private_key TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT now()
+  created_at TIMESTAMP NOT NULL,
 );
 
 -- +goose Down

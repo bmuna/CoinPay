@@ -6,3 +6,5 @@ RETURNING *;
 
 -- name: GetUser :one
 SELECT * FROM users WHERE email = $1;
+
+

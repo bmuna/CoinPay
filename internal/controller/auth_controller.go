@@ -84,10 +84,12 @@ func Signup(apiCfg *config.ApiConfig) http.HandlerFunc {
 			log.Fatal("Error when hashing the password")
 		}
 
+		userId := uuid.New()
+
 		user, err := apiCfg.DB.CreateUser(
 			r.Context(),
 			database.CreateUserParams{
-				ID:        uuid.New(),
+				ID:        userId,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 				Email:     userCredential.Email,
@@ -97,6 +99,25 @@ func Signup(apiCfg *config.ApiConfig) http.HandlerFunc {
 
 		if err != nil {
 			respondWithError(w, 400, fmt.Sprintf("coudn't create user: %v", err))
+		}
+
+		privateKeyHex, address := CreateWallet()
+
+		encryptedKey, err := security.Encrypt(privateKeyHex, os.Getenv("ENCRYPTION_SECRET"))
+		if err != nil {
+			log.Printf("Error when encrypting private key %v", err)
+		}
+
+		_, err = apiCfg.DB.CreateWallet(r.Context(), database.CreateWalletParams{
+			ID:                  uuid.New(),
+			UserID:              userId,
+			Address:             address,
+			EncryptedPrivateKey: encryptedKey,
+			CreatedAt:           time.Now(),
+		})
+
+		if err != nil {
+			log.Printf("Error when creating a wallet %v", err)
 		}
 
 		respondWithJSON(w, 200, models.DatabaseUserToUser(user, nil))
@@ -179,8 +200,6 @@ func GetAuthCallBackFuction(apiCfg *config.ApiConfig) http.HandlerFunc {
 
 	}
 }
-
-
 
 func handlerSendETH() {
 

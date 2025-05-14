@@ -2,9 +2,11 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -56,16 +58,27 @@ func createToken(email string) (string, error) {
 
 func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tokenString := r.Header.Get("Authorization")
-		if tokenString == "" {
+		fmt.Printf("response %v", r.Header)
+		authHeader := r.Header.Get("Authorization")
+
+		if authHeader == "" {
 			log.Println("Unauthorized user: missing token")
 			respondWithError(w, http.StatusUnauthorized, "Unauthorized user")
 			return
 		}
-		
-		
+
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			log.Println("Unauthorized user: invalid token format")
+			respondWithError(w, http.StatusUnauthorized, "Invalid token format")
+			return
+		}
+		tokenString := parts[1]
+
+		fmt.Printf("token %v", tokenString)
+
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
+			return secretKey, nil
 		})
 
 		if err != nil || !token.Valid {
