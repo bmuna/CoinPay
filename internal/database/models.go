@@ -5,7 +5,6 @@
 package database
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,8 +20,8 @@ type User struct {
 
 type Wallet struct {
 	ID                  uuid.UUID
-	UserID              uuid.NullUUID
+	UserID              uuid.UUID
 	Address             string
 	EncryptedPrivateKey string
-	CreatedAt           sql.NullTime
+	CreatedAt           time.Time
 }
